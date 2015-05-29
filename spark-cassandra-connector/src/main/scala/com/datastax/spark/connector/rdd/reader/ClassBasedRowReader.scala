@@ -61,7 +61,7 @@ class ClassBasedRowReader[R : TypeTag : ColumnMapper](table: TableDef, skipColum
     columnRef match {
       case NamedColumnRef(_, selectedAs) =>
         AbstractRow.get(row, selectedAs, protocolVersion)
-      case ColumnIndex(index) =>
+      case IndexedColumnRef(index) =>
         AbstractRow.get(row, index + skipColumns, protocolVersion)
     }
   }
@@ -69,7 +69,7 @@ class ClassBasedRowReader[R : TypeTag : ColumnMapper](table: TableDef, skipColum
   private def getColumnName(row: Row, columnRef: ColumnRef) = {
     columnRef match {
       case NamedColumnRef(_, selectedAs) => selectedAs
-      case ColumnIndex(index) => row.getColumnDefinitions.getName(index + skipColumns)
+      case IndexedColumnRef(index) => row.getColumnDefinitions.getName(index + skipColumns)
     }
   }
 
@@ -122,7 +122,7 @@ class ClassBasedRowReader[R : TypeTag : ColumnMapper](table: TableDef, skipColum
     columnRefs.collect{ case ColumnName(name) => name }.toSeq
 
   private def extractColumnIndexes(columnRefs: Iterable[ColumnRef]): Seq[Int] =
-    columnRefs.collect{ case ColumnIndex(index) => index }.toSeq
+    columnRefs.collect{ case IndexedColumnRef(index) => index }.toSeq
 
   private val allColumnRefs = columnMap.constructor ++ columnMap.setters.values
 

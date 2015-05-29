@@ -1,8 +1,8 @@
 package com.datastax.spark.connector.japi.rdd;
 
-import com.datastax.spark.connector.NamedColumnRef;
 import com.datastax.spark.connector.cql.CassandraConnector;
 import com.datastax.spark.connector.japi.CassandraJavaUtil;
+import com.datastax.spark.connector.mapper.NamedColumnRef;
 import com.datastax.spark.connector.rdd.CassandraRDD;
 import com.datastax.spark.connector.rdd.ReadConf;
 import com.datastax.spark.connector.util.JavaApiHelper;
@@ -75,12 +75,21 @@ public class CassandraJavaRDD<R> extends JavaRDD<R> {
     }
 
     /**
-     * Returns the names of columns to be selected from the table.
+     * Returns the columns to be selected from the table.
      */
-    public NamedColumnRef[] selectedColumnNames() {
+    public NamedColumnRef[] selectedColumnRefs() {
         // explicit type cast is intentional and required here
         //noinspection RedundantCast
-        return (NamedColumnRef[]) rdd().selectedColumnNames().<NamedColumnRef>toArray(getClassTag(NamedColumnRef.class));
+        return (NamedColumnRef[]) rdd().selectedColumnRefs().<NamedColumnRef>toArray(getClassTag(NamedColumnRef.class));
+    }
+
+    /**
+     * Returns the names of columns to be selected from the table.
+     */
+    public String[] selectedColumnNames() {
+        // explicit type cast is intentional and required here
+        //noinspection RedundantCast
+        return (String[]) rdd().selectedColumnNames().<String>toArray(getClassTag(String.class));
     }
 
     /**

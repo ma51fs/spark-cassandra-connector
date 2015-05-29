@@ -3,6 +3,7 @@ package com.datastax.spark.connector.rdd.reader
 import com.datastax.driver.core.{ProtocolVersion, Row}
 import com.datastax.spark.connector._
 import com.datastax.spark.connector.cql.TableDef
+import com.datastax.spark.connector.mapper.{NamedColumnRef, IndexedColumnRef, ColumnRef}
 import com.datastax.spark.connector.types.TypeConverter
 import com.datastax.spark.connector.util.JavaApiHelper
 
@@ -15,7 +16,7 @@ class ValueRowReader[T: TypeConverter](columnRef: ColumnRef) extends RowReader[T
     * @param columnNames column names available in the `row` */
   override def read(row: Row, columnNames: Array[String], protocolVersion: ProtocolVersion): T = {
     columnRef match {
-      case ColumnIndex(idx) => converter.convert(AbstractRow.get(row, idx, protocolVersion))
+      case IndexedColumnRef(idx) => converter.convert(AbstractRow.get(row, idx, protocolVersion))
       case NamedColumnRef(_, selectedAs) => converter.convert(AbstractRow.get(row, selectedAs, protocolVersion))
     }
   }
@@ -29,7 +30,7 @@ class ValueRowReader[T: TypeConverter](columnRef: ColumnRef) extends RowReader[T
 
   /** The number of columns that need to be fetched from C*. */
   override def requiredColumns: Option[Int] = columnRef match {
-    case ColumnIndex(idx) => Some(idx)
+    case IndexedColumnRef(idx) => Some(idx)
     case _ => None
   }
 
@@ -40,7 +41,7 @@ class ValueRowReaderFactory[T: TypeConverter]
   extends RowReaderFactory[T] {
 
   override def rowReader(table: TableDef, options: RowReaderOptions): RowReader[T] = {
-    new ValueRowReader[T](ColumnIndex(options.offset))
+    new ValueRowReader[T](IndexedColumnRef(options.offset))
   }
 
   override def targetClass: Class[T] = JavaApiHelper.getRuntimeClass(implicitly[TypeConverter[T]].targetTypeTag)

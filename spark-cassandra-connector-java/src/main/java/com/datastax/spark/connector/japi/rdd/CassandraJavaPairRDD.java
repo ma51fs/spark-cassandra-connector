@@ -2,7 +2,7 @@ package com.datastax.spark.connector.japi.rdd;
 
 import com.datastax.spark.connector.cql.CassandraConnector;
 import com.datastax.spark.connector.japi.CassandraJavaUtil;
-import com.datastax.spark.connector.NamedColumnRef;
+import com.datastax.spark.connector.mapper.NamedColumnRef;
 import com.datastax.spark.connector.rdd.CassandraRDD;
 import com.datastax.spark.connector.rdd.ReadConf;
 import com.datastax.spark.connector.util.JavaApiHelper;
@@ -80,7 +80,7 @@ public class CassandraJavaPairRDD<K, V> extends JavaPairRDD<K, V> {
     public String[] selectedColumnNames() {
         // explicit type cast is intentional and required here
         //noinspection RedundantCast
-        return (String[]) rdd().selectedColumnNames().<String>toArray(getClassTag(String.class));
+        return (String[]) rdd().selectedColumnRefs().<String>toArray(getClassTag(String.class));
     }
 
     /**

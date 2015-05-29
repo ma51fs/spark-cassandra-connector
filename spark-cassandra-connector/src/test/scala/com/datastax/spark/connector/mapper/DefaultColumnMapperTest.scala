@@ -1,6 +1,5 @@
 package com.datastax.spark.connector.mapper
 
-import com.datastax.spark.connector.ColumnName
 import com.datastax.spark.connector.cql.{RegularColumn, TableDef, ColumnDef}
 import com.datastax.spark.connector.types.IntType
 import org.apache.commons.lang3.SerializationUtils

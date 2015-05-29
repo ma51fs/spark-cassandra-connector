@@ -7,6 +7,7 @@ import scala.collection.JavaConversions._
 import scala.language.existentials
 
 import com.datastax.driver.core.{Session, Statement}
+import com.datastax.spark.connector.mapper.{WriteTime, TTL, NamedColumnRef, ColumnName}
 import com.datastax.spark.connector.{SomeColumns, AllColumns, ColumnSelector}
 import com.datastax.spark.connector.cql._
 import com.datastax.spark.connector.rdd.partitioner.{CassandraRDDPartitioner, CassandraPartition, CqlTokenRange}
@@ -123,7 +124,7 @@ class CassandraRDD[R] private[connector] (
   /** Filters currently selected set of columns with a new set of columns */
   private def narrowColumnSelection(columns: Seq[NamedColumnRef]): Seq[NamedColumnRef] = {
     columnNames match {
-      case SomeColumns(cs @ _*) =>
+      case SomeColumns(cs) =>
         checkColumnsAvailable(columns, cs)
       case AllColumns =>
         // we do not check for column existence yet as it would require fetching schema and a call to C*
@@ -278,13 +279,16 @@ class CassandraRDD[R] private[connector] (
     columns.map(checkSingleColumn)
   }
 
+  lazy val selectedColumnNames: Seq[String] = {
+    selectedColumnRefs.map(_.columnName)
+  }
 
   /** Returns the names of columns to be selected from the table.*/
-  lazy val selectedColumnNames: Seq[NamedColumnRef] = {
+  lazy val selectedColumnRefs: Seq[NamedColumnRef] = {
     val providedColumnNames =
       columnNames match {
         case AllColumns => tableDef.allColumns.map(col => col.columnName: NamedColumnRef).toSeq
-        case SomeColumns(cs @ _*) => checkColumnsExistence(cs)
+        case SomeColumns(cs) => checkColumnsExistence(cs)
       }
 
     (rowTransformer.columnNames, rowTransformer.requiredColumns) match {
@@ -304,15 +308,15 @@ class CassandraRDD[R] private[connector] (
 
     rowTransformer.columnNames match {
       case Some(names) =>
-        val missingColumns = names.toSet -- selectedColumnNames.map(_.selectedAs).toSet
+        val missingColumns = names.toSet -- selectedColumnRefs.map(_.selectedAs).toSet
         assert(missingColumns.isEmpty, s"Missing columns needed by $targetType: ${missingColumns.mkString(", ")}")
       case None =>
     }
 
     rowTransformer.requiredColumns match {
       case Some(count) =>
-        assert(selectedColumnNames.size >= count,
-        s"Not enough columns selected for the target row type $targetType: ${selectedColumnNames.size} < $count")
+        assert(selectedColumnRefs.size >= count,
+        s"Not enough columns selected for the target row type $targetType: ${selectedColumnRefs.size} < $count")
       case None =>
     }
   }
@@ -339,7 +343,7 @@ class CassandraRDD[R] private[connector] (
     .endpoints.flatMap(inet => Seq(inet.getHostName, inet.getHostAddress)).toSeq.distinct
 
   private def tokenRangeToCqlQuery(range: CqlTokenRange): (String, Seq[Any]) = {
-    val columns = selectedColumnNames.map(_.cql).mkString(", ")
+    val columns = selectedColumnRefs.map(_.cql).mkString(", ")
     val filter = (range.cql +: where.predicates ).filter(_.nonEmpty).mkString(" AND ") + " ALLOW FILTERING"
     val quotedKeyspaceName = quote(keyspaceName)
     val quotedTableName = quote(tableName)
@@ -373,7 +377,7 @@ class CassandraRDD[R] private[connector] (
     val (cql, values) = tokenRangeToCqlQuery(range)
     logDebug(s"Fetching data for range ${range.cql} with $cql with params ${values.mkString("[", ",", "]")}")
     val stmt = createStatement(session, cql, values: _*)
-    val columnNamesArray = selectedColumnNames.map(_.selectedAs).toArray
+    val columnNamesArray = selectedColumnRefs.map(_.selectedAs).toArray
     try {
       val rs = session.execute(stmt)
       val protocolVersion = session.getCluster.getConfiguration.getProtocolOptions.getProtocolVersionEnum

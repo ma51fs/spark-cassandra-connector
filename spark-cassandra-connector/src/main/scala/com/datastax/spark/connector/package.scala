@@ -6,6 +6,8 @@ import org.apache.spark.rdd.RDD
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
+import com.datastax.spark.connector.mapper.{ColumnName, NamedColumnRef, TTL, WriteTime}
+
 /**
  * The root package of Cassandra connector for Apache Spark.
  * Offers handy implicit conversions that add Cassandra-specific methods to `SparkContext` and `RDD`.

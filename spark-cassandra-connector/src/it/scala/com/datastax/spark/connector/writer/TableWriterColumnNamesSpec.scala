@@ -1,6 +1,7 @@
 package com.datastax.spark.connector.writer
 
 import com.datastax.spark.connector.cql.CassandraConnector
+import com.datastax.spark.connector.mapper.NamedColumnRef
 import com.datastax.spark.connector.{SomeColumns, AllColumns}
 import com.datastax.spark.connector.testkit._
 import com.datastax.spark.connector.embedded._

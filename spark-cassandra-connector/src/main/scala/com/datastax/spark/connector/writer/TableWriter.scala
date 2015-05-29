@@ -5,6 +5,7 @@ import java.io.IOException
 import com.datastax.driver.core.{BatchStatement, PreparedStatement, Session}
 import com.datastax.spark.connector._
 import com.datastax.spark.connector.cql.{ColumnDef, CassandraConnector, Schema, TableDef}
+import com.datastax.spark.connector.mapper.{WriteTime, TTL, ColumnName}
 import com.datastax.spark.connector.util.{CountingIterator, Logging}
 import org.apache.spark.TaskContext
 
@@ -165,7 +166,7 @@ object TableWriter {
     val tableDef = schema.tables.headOption
       .getOrElse(throw new IOException(s"Table not found: $keyspaceName.$tableName"))
     val selectedColumns = columnNames match {
-      case SomeColumns(names @ _*) => names.map {
+      case SomeColumns(names) => names.map {
         case ColumnName(columnName) => columnName
         case TTL(_) | WriteTime(_) =>
           throw new IllegalArgumentException(

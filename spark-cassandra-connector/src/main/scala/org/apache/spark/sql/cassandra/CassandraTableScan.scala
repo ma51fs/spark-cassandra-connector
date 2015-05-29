@@ -8,6 +8,8 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.types.DataType
 import org.apache.spark.sql.execution.LeafNode
 
+import com.datastax.spark.connector.mapper.NamedColumnRef
+
 @DeveloperApi
 case class CassandraTableScan(
   attributes: Seq[Attribute],
