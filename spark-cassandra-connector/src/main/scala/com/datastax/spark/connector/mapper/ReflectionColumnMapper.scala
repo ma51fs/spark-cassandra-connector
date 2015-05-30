@@ -41,7 +41,7 @@ abstract class ReflectionColumnMapper[T : ClassTag] extends ColumnMapper[T] {
         val columnNames = paramNames
           .map(constructorParamToColumnName(_, tableDef))
           .filter(_ != "$_outer")
-        columnNames.map(ColumnName)
+        columnNames.map(NamedColumnRef)
       }
     }
 
@@ -51,7 +51,7 @@ abstract class ReflectionColumnMapper[T : ClassTag] extends ColumnMapper[T] {
       for (method <- cls.getMethods if isGetter(method)) yield {
         val methodName = method.getName
         val columnName = getterToColumnName(methodName, tableDef)
-        (methodName, ColumnName(columnName))
+        (methodName, NamedColumnRef(columnName))
       }
     }.toMap
 
@@ -59,7 +59,7 @@ abstract class ReflectionColumnMapper[T : ClassTag] extends ColumnMapper[T] {
       for (method <- cls.getMethods if isSetter(method)) yield {
         val methodName = method.getName
         val columnName = setterToColumnName(methodName, tableDef)
-        (methodName, ColumnName(columnName))
+        (methodName, NamedColumnRef(columnName))
       }
     }.toMap
 

@@ -6,7 +6,7 @@ import org.apache.spark.rdd.RDD
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
-import com.datastax.spark.connector.mapper.{ColumnName, NamedColumnRef, TTL, WriteTime}
+import com.datastax.spark.connector.mapper.{NamedColumnRef, IndexedByNameColumnRef, TTL, WriteTime}
 
 /**
  * The root package of Cassandra connector for Apache Spark.
@@ -63,5 +63,5 @@ package object connector {
     def ttl: TTL = TTL(columnName)
   }
 
-  implicit def toNamedColumnRef(columnName: String): NamedColumnRef = ColumnName(columnName)
+  implicit def toNamedColumnRef(columnName: String): IndexedByNameColumnRef = NamedColumnRef(columnName)
 }

@@ -2,7 +2,7 @@ package com.datastax.spark.connector.writer
 
 import com.datastax.driver.core.{ProtocolVersion, PreparedStatement}
 import com.datastax.spark.connector.cql.TableDef
-import com.datastax.spark.connector.mapper.{IndexedColumnRef, ColumnName, ColumnRef, ColumnMapper}
+import com.datastax.spark.connector.mapper.{IndexedColumnRef, NamedColumnRef, ColumnRef, ColumnMapper}
 import com.datastax.spark.connector.types.TypeConverter
 
 import scala.collection.{Map, Seq}
@@ -46,7 +46,7 @@ class DefaultRowWriter[T : ColumnMapper](table: TableDef, selectedColumns: Seq[S
 
   private def columnNameByRef(columnRef: ColumnRef): Option[String] = {
     columnRef match {
-      case ColumnName(name) if selectedColumnsSet.contains(name) => Some(name)
+      case NamedColumnRef(name) if selectedColumnsSet.contains(name) => Some(name)
       case IndexedColumnRef(index) if index < selectedColumns.size => Some(selectedColumnsIndexed(index))
       case _ => None
     }

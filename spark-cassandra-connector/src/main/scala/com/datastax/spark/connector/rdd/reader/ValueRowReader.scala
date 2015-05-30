@@ -3,7 +3,7 @@ package com.datastax.spark.connector.rdd.reader
 import com.datastax.driver.core.{ProtocolVersion, Row}
 import com.datastax.spark.connector._
 import com.datastax.spark.connector.cql.TableDef
-import com.datastax.spark.connector.mapper.{NamedColumnRef, IndexedColumnRef, ColumnRef}
+import com.datastax.spark.connector.mapper.{IndexedByNameColumnRef, IndexedColumnRef, ColumnRef}
 import com.datastax.spark.connector.types.TypeConverter
 import com.datastax.spark.connector.util.JavaApiHelper
 
@@ -17,14 +17,14 @@ class ValueRowReader[T: TypeConverter](columnRef: ColumnRef) extends RowReader[T
   override def read(row: Row, columnNames: Array[String], protocolVersion: ProtocolVersion): T = {
     columnRef match {
       case IndexedColumnRef(idx) => converter.convert(AbstractRow.get(row, idx, protocolVersion))
-      case NamedColumnRef(_, selectedAs) => converter.convert(AbstractRow.get(row, selectedAs, protocolVersion))
+      case IndexedByNameColumnRef(_, selectedAs) => converter.convert(AbstractRow.get(row, selectedAs, protocolVersion))
     }
   }
 
   /** List of columns this `RowReader` is going to read.
     * Useful to avoid fetching the columns that are not needed. */
   override def columnNames: Option[Seq[String]] = columnRef match {
-    case NamedColumnRef(_, selectedAs) => Some(Seq(selectedAs))
+    case IndexedByNameColumnRef(_, selectedAs) => Some(Seq(selectedAs))
     case _ => None
   }
 

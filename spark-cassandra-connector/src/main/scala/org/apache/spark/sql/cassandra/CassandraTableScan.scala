@@ -8,7 +8,7 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.types.DataType
 import org.apache.spark.sql.execution.LeafNode
 
-import com.datastax.spark.connector.mapper.NamedColumnRef
+import com.datastax.spark.connector.mapper.IndexedByNameColumnRef
 
 @DeveloperApi
 case class CassandraTableScan(
@@ -23,7 +23,7 @@ case class CassandraTableScan(
     //TODO: cluster level CassandraConnector, read configuration settings
     var rdd = context.sparkContext.cassandraTable[CassandraSQLRow](relation.keyspaceName, relation.tableName)
     if (attributes.map(_.name).size > 0)
-      rdd = rdd.select(attributes.map(a => relation.columnNameByLowercase(a.name): NamedColumnRef): _*)
+      rdd = rdd.select(attributes.map(a => relation.columnNameByLowercase(a.name): IndexedByNameColumnRef): _*)
     if (pushdownPred.nonEmpty) {
       val(cql, values) = whereClause(pushdownPred)
       rdd = rdd.where(cql, values: _*)

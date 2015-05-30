@@ -7,7 +7,7 @@ import scala.collection.JavaConversions._
 import scala.language.existentials
 
 import com.datastax.driver.core.{Session, Statement}
-import com.datastax.spark.connector.mapper.{WriteTime, TTL, NamedColumnRef, ColumnName}
+import com.datastax.spark.connector.mapper.{WriteTime, TTL, IndexedByNameColumnRef, NamedColumnRef}
 import com.datastax.spark.connector.{SomeColumns, AllColumns, ColumnSelector}
 import com.datastax.spark.connector.cql._
 import com.datastax.spark.connector.rdd.partitioner.{CassandraRDDPartitioner, CassandraPartition, CqlTokenRange}
@@ -106,13 +106,13 @@ class CassandraRDD[R] private[connector] (
   }
 
   /** Throws IllegalArgumentException if columns sequence contains unavailable columns */
-  private def checkColumnsAvailable(columns: Seq[NamedColumnRef], availableColumns: Seq[NamedColumnRef]) {
+  private def checkColumnsAvailable(columns: Seq[IndexedByNameColumnRef], availableColumns: Seq[IndexedByNameColumnRef]) {
     val availableColumnsSet = availableColumns.collect {
-      case ColumnName(columnName) => columnName
+      case NamedColumnRef(columnName) => columnName
     }.toSet
 
     val notFound = columns.collectFirst {
-      case ColumnName(columnName) if !availableColumnsSet.contains(columnName) => columnName
+      case NamedColumnRef(columnName) if !availableColumnsSet.contains(columnName) => columnName
     }
 
     if (notFound.isDefined)
@@ -122,7 +122,7 @@ class CassandraRDD[R] private[connector] (
   }
 
   /** Filters currently selected set of columns with a new set of columns */
-  private def narrowColumnSelection(columns: Seq[NamedColumnRef]): Seq[NamedColumnRef] = {
+  private def narrowColumnSelection(columns: Seq[IndexedByNameColumnRef]): Seq[IndexedByNameColumnRef] = {
     columnNames match {
       case SomeColumns(cs) =>
         checkColumnsAvailable(columns, cs)
@@ -139,13 +139,13 @@ class CassandraRDD[R] private[connector] (
     * after a column was removed by the previous `select` call, it is not possible to
     * add it back.
     *
-    * The selected columns are [[NamedColumnRef]] instances. This type allows to specify columns for
+    * The selected columns are [[IndexedByNameColumnRef]] instances. This type allows to specify columns for
     * straightforward retrieval and to read TTL or write time of regular columns as well. Implicit
     * conversions included in [[com.datastax.spark.connector]] package make it possible to provide
     * just column names (which is also backward compatible) and optional add `.ttl` or `.writeTime`
-    * suffix in order to create an appropriate [[NamedColumnRef]] instance.
+    * suffix in order to create an appropriate [[IndexedByNameColumnRef]] instance.
     */
-  def select(columns: NamedColumnRef*): CassandraRDD[R] = {
+  def select(columns: IndexedByNameColumnRef*): CassandraRDD[R] = {
     copy(columnNames = SomeColumns(narrowColumnSelection(columns): _*))
   }
 
@@ -251,16 +251,16 @@ class CassandraRDD[R] private[connector] (
 
   private lazy val rowTransformer = implicitly[RowReaderFactory[R]].rowReader(tableDef)
 
-  private def checkColumnsExistence(columns: Seq[NamedColumnRef]): Seq[NamedColumnRef] = {
+  private def checkColumnsExistence(columns: Seq[IndexedByNameColumnRef]): Seq[IndexedByNameColumnRef] = {
     val allColumnNames = tableDef.allColumns.map(_.columnName).toSet
     val regularColumnNames = tableDef.regularColumns.map(_.columnName).toSet
 
-    def checkSingleColumn(column: NamedColumnRef) = {
-      if (!allColumnNames.contains(column.columnName))
+    def checkSingleColumn(column: IndexedByNameColumnRef) = {
+      if (!allColumnNames.contains(column.name))
         throw new IOException(s"Column $column not found in table $keyspaceName.$tableName")
 
       column match {
-        case ColumnName(_) =>
+        case NamedColumnRef(_) =>
 
         case TTL(columnName) =>
           if (!regularColumnNames.contains(columnName))
@@ -280,14 +280,14 @@ class CassandraRDD[R] private[connector] (
   }
 
   lazy val selectedColumnNames: Seq[String] = {
-    selectedColumnRefs.map(_.columnName)
+    selectedColumnRefs.map(_.name)
   }
 
   /** Returns the names of columns to be selected from the table.*/
-  lazy val selectedColumnRefs: Seq[NamedColumnRef] = {
+  lazy val selectedColumnRefs: Seq[IndexedByNameColumnRef] = {
     val providedColumnNames =
       columnNames match {
-        case AllColumns => tableDef.allColumns.map(col => col.columnName: NamedColumnRef).toSeq
+        case AllColumns => tableDef.allColumns.map(col => col.columnName: IndexedByNameColumnRef).toSeq
         case SomeColumns(cs) => checkColumnsExistence(cs)
       }
 

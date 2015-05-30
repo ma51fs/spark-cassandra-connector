@@ -3,10 +3,10 @@ package com.datastax.spark.connector.mapper
 /** Unambiguous reference to a column in the query result set row. */
 sealed trait ColumnRef
 
-sealed trait NamedColumnRef extends ColumnRef {
+sealed trait IndexedByNameColumnRef extends ColumnRef {
   /** Returns the column name which this selection bases on. In case of a function, such as `ttl` or
     * `writetime`, it returns the column name passed to that function. */
-  def columnName: String
+  def name: String
 
   /** Returns a CQL phrase which has to be passed to the `SELECT` clause with appropriate quotation
     * marks. */
@@ -17,48 +17,46 @@ sealed trait NamedColumnRef extends ColumnRef {
   def selectedAs: String
 }
 
-object NamedColumnRef {
-  def unapply(columnRef: NamedColumnRef) = Some((columnRef.columnName, columnRef.selectedAs))
+object IndexedByNameColumnRef {
+  def unapply(columnRef: IndexedByNameColumnRef) = Some((columnRef.name, columnRef.selectedAs))
 }
 
 /** References a column by name. */
-case class ColumnName(columnName: String) extends NamedColumnRef {
-  val cql = s""""$columnName""""
-  val selectedAs = columnName
+case class NamedColumnRef(name: String) extends IndexedByNameColumnRef {
+  val cql = s""""$name""""
+  val selectedAs = name
 
   override def toString: String = selectedAs
 }
 
-case class TTL(columnName: String) extends NamedColumnRef {
-  val cql = s"""TTL("$columnName")"""
-  val selectedAs = s"ttl($columnName)"
+case class TTL(name: String) extends IndexedByNameColumnRef {
+  val cql = s"""TTL("$name")"""
+  val selectedAs = s"ttl($name)"
 
   override def toString: String = selectedAs
 }
 
-case class WriteTime(columnName: String) extends NamedColumnRef {
-  val cql = s"""WRITETIME("$columnName")"""
-  val selectedAs = s"writetime($columnName)"
+case class WriteTime(name: String) extends IndexedByNameColumnRef {
+  val cql = s"""WRITETIME("$name")"""
+  val selectedAs = s"writetime($name)"
 
   override def toString: String = selectedAs
 }
 
 /** References a column by its index in the row. Useful for tuples. */
-case class IndexedColumnRef(columnIndex: Int) extends ColumnRef
+case class IndexedColumnRef(index: Int) extends ColumnRef
 
 /** Associates constructor parameters and property accessors with table columns */
 trait ColumnMap extends Serializable {
   def constructor: Seq[ColumnRef]
-
   def getters: Map[String, ColumnRef]
-
   def setters: Map[String, ColumnRef]
-
   def allowsNull: Boolean
 }
 
-case class SimpleColumnMap(constructor: Seq[ColumnRef],
-                           getters: Map[String, ColumnRef],
-                           setters: Map[String, ColumnRef],
-                           allowsNull: Boolean = false) extends ColumnMap
+case class SimpleColumnMap(
+  constructor: Seq[ColumnRef],
+  getters: Map[String, ColumnRef],
+  setters: Map[String, ColumnRef],
+  allowsNull: Boolean = false) extends ColumnMap
 
